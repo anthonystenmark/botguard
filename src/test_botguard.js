@@ -1,7 +1,7 @@
 const fs = require('fs');
 const vm = require('vm');
-
 const path = require('path');
+
 const code = fs.readFileSync(path.join(__dirname, 'botguard.js'), 'utf8');
 
 function runTest(name, setup, assertions) {
@@ -50,23 +50,21 @@ function runTest(name, setup, assertions) {
 // TESTS
 
 runTest("Clean User", (ctx) => { }, (win) => {
-    console.log(`Score: ${win.botguard_score}`);
-    console.log(`Is Bot: ${win.is_bot}`);
     if (win.botguard_score === 0 && win.is_bot === false) {
-        console.log("PASS");
+        console.log(`✅ PASS: Correctly identified as HUMAN (Score: ${win.botguard_score})`);
     } else {
-        console.error("FAIL", win.botguard_reasons);
+        console.error(`❌ FAIL: Expected HUMAN, got Score: ${win.botguard_score}`, win.botguard_reasons);
     }
 });
 
 runTest("Bot - Webdriver", (ctx) => {
     ctx.navigator.webdriver = true;
 }, (win) => {
-    console.log(`Score: ${win.botguard_score}`);
-    if (win.botguard_score >= 40 && win.botguard_reasons.includes("webdriver")) {
-        console.log("PASS");
+    // Webdriver is now 50, so it should trigger is_bot
+    if (win.is_bot === true && win.botguard_reasons.includes("webdriver")) {
+        console.log(`✅ PASS: Correctly identified as BOT (Score: ${win.botguard_score})`);
     } else {
-        console.error("FAIL", win.botguard_reasons);
+        console.error(`❌ FAIL: Expected BOT, got Score: ${win.botguard_score}`, win.botguard_reasons);
     }
 });
 
@@ -74,26 +72,22 @@ runTest("Bot - Headless Traits", (ctx) => {
     ctx.navigator.plugins = [];
     ctx.navigator.languages = [];
 }, (win) => {
-    console.log(`Score: ${win.botguard_score}`);
-    try {
-        if (win.botguard_score >= 30
-            && win.botguard_reasons.includes("no_plugins")
-            && win.botguard_reasons.includes("no_languages")) {
-            console.log("PASS");
-        } else {
-            console.error("FAIL", win.botguard_reasons);
-        }
-    } catch (e) { console.error("ASSERT ERROR", e); }
+    // 15 + 15 = 30. Threshold is 50. Should NOT be a bot yet.
+    if (win.is_bot === false && win.botguard_score === 30) {
+        console.log(`✅ PASS: Correctly identified as HUMAN (Suspicious) (Score: ${win.botguard_score})`);
+    } else {
+        console.error(`❌ FAIL: Expected SUSPICIOUS HUMAN, got Score: ${win.botguard_score}`, win.botguard_reasons);
+    }
 });
 
 runTest("Bot - User Agent", (ctx) => {
     ctx.navigator.userAgent = "Googlebot/2.1 (+http://www.google.com/bot.html)";
 }, (win) => {
-    console.log(`Score: ${win.botguard_score}`);
-    if (win.botguard_score >= 50 && win.is_bot === true && win.botguard_reasons.includes("known_bot_ua")) {
-        console.log("PASS");
+    // UA is 90. Should be bot.
+    if (win.is_bot === true && win.botguard_reasons.includes("known_bot_ua")) {
+        console.log(`✅ PASS: Correctly identified as BOT (Score: ${win.botguard_score})`);
     } else {
-        console.error("FAIL", win.botguard_reasons);
+        console.error(`❌ FAIL: Expected BOT, got Score: ${win.botguard_score}`, win.botguard_reasons);
     }
 });
 
@@ -101,13 +95,10 @@ runTest("Bot - Low Hardware Spec", (ctx) => {
     ctx.navigator.hardwareConcurrency = 1;
     ctx.navigator.deviceMemory = 0.5;
 }, (win) => {
-    console.log(`Score: ${win.botguard_score}`);
-    // 10 + 10 = 20
-    if (win.botguard_score >= 20
-        && win.botguard_reasons.includes("low_concurrency")
-        && win.botguard_reasons.includes("low_memory")) {
-        console.log("PASS");
+    // 10 + 10 = 20. Should not be bot.
+    if (win.is_bot === false && win.botguard_score === 20) {
+        console.log(`✅ PASS: Correctly identified as HUMAN (Low Spec) (Score: ${win.botguard_score})`);
     } else {
-        console.error("FAIL", win.botguard_reasons);
+        console.error(`❌ FAIL: Expected HUMAN, got Score: ${win.botguard_score}`, win.botguard_reasons);
     }
 });
