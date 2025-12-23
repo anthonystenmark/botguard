@@ -25,7 +25,7 @@ Each check contributes points to a total score.
 *   **Threshold**: 50 (default)
 
 **Weights:**
-*   User Agent Match: 50
+*   User Agent Match: 90
 *   Webdriver Present: 40
 *   Headless Chrome Traits: 20
 *   No Plugins: 15

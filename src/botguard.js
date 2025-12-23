@@ -3,8 +3,8 @@ const BotGuard = {
     score: 0,
     reasons: [],
     weights: {
-        webdriver: 40,
-        userAgent: 50,
+        webdriver: 50,
+        userAgent: 90,
         noPlugins: 15,
         noLanguages: 15,
         headlessChrome: 20,
