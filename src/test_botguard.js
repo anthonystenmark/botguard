@@ -1,21 +1,22 @@
-const fs = require('fs');
-const vm = require('vm');
-const path = require('path');
-
-const code = fs.readFileSync(path.join(__dirname, 'botguard.js'), 'utf8');
+import BotGuard from './botguard.js';
 
 function runTest(name, setup, assertions) {
     console.log(`\nRunning Test: ${name}`);
 
-    // Create a fresh context for every test to avoid 'const' redeclaration issues
-    // and ensuring clean global state.
-    const sandbox = {
-        window: {
+    // Mock Globals (reset each time)
+    // Use defineProperty to avoid "getter-only" errors in some environments
+    Object.defineProperty(global, 'window', {
+        value: {
             innerWidth: 1024,
             innerHeight: 768,
-            chrome: true, // properties need to be on the window object
+            chrome: true,
         },
-        navigator: {
+        writable: true,
+        configurable: true
+    });
+
+    Object.defineProperty(global, 'navigator', {
+        value: {
             userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
             webdriver: false,
             plugins: [{ name: "PDF Viewer" }],
@@ -23,33 +24,26 @@ function runTest(name, setup, assertions) {
             hardwareConcurrency: 4,
             deviceMemory: 8
         },
-        console: console // Allow logs
-    };
+        writable: true,
+        configurable: true
+    });
 
-    // Circular reference for window.window if needed, but simple assignments usually suffice.
-    sandbox.window.window = sandbox.window;
+    // Apply specific setup
+    setup(global.navigator);
 
-    // allow code to access 'navigator' directly as if it were global
-    sandbox.navigator = sandbox.navigator;
+    // Reset BotGuard state between tests!
+    BotGuard.reset();
 
-    // Apply setup tweaks to the sandbox
-    setup(sandbox);
+    // Execute
+    BotGuard.run();
 
-    try {
-        vm.createContext(sandbox);
-        vm.runInContext(code, sandbox);
-
-        // Extract results from sandbox window
-        const resultWindow = sandbox.window;
-        assertions(resultWindow);
-    } catch (e) {
-        console.error("Script Execution Error:", e);
-    }
+    // Assert
+    assertions(global.window);
 }
 
 // TESTS
 
-runTest("Clean User", (ctx) => { }, (win) => {
+runTest("Clean User", (nav) => { }, (win) => {
     if (win.botguard_score === 0 && win.is_bot === false) {
         console.log(`✅ PASS: Correctly identified as HUMAN (Score: ${win.botguard_score})`);
     } else {
@@ -57,10 +51,9 @@ runTest("Clean User", (ctx) => { }, (win) => {
     }
 });
 
-runTest("Bot - Webdriver", (ctx) => {
-    ctx.navigator.webdriver = true;
+runTest("Bot - Webdriver", (nav) => {
+    nav.webdriver = true;
 }, (win) => {
-    // Webdriver is now 50, so it should trigger is_bot
     if (win.is_bot === true && win.botguard_reasons.includes("webdriver")) {
         console.log(`✅ PASS: Correctly identified as BOT (Score: ${win.botguard_score})`);
     } else {
@@ -68,22 +61,25 @@ runTest("Bot - Webdriver", (ctx) => {
     }
 });
 
-runTest("Bot - Headless Traits", (ctx) => {
-    ctx.navigator.plugins = [];
-    ctx.navigator.languages = [];
+runTest("Bot - Headless Traits", (nav) => {
+    // Explicitly confirm webdriver is false (it should be from reset, but good to be safe)
+    // nav.webdriver = false; 
+    nav.plugins = [];
+    nav.languages = [];
 }, (win) => {
-    // 15 + 15 = 30. Threshold is 50. Should NOT be a bot yet.
+    // 15 + 15 = 30. Threshold is 50.
     if (win.is_bot === false && win.botguard_score === 30) {
         console.log(`✅ PASS: Correctly identified as HUMAN (Suspicious) (Score: ${win.botguard_score})`);
     } else {
+        // If this fails with 65, it means webdriver is still true!
         console.error(`❌ FAIL: Expected SUSPICIOUS HUMAN, got Score: ${win.botguard_score}`, win.botguard_reasons);
     }
 });
 
-runTest("Bot - User Agent", (ctx) => {
-    ctx.navigator.userAgent = "Googlebot/2.1 (+http://www.google.com/bot.html)";
+runTest("Bot - User Agent", (nav) => {
+    nav.userAgent = "Googlebot/2.1 (+http://www.google.com/bot.html)";
 }, (win) => {
-    // UA is 90. Should be bot.
+    // UA is 90.
     if (win.is_bot === true && win.botguard_reasons.includes("known_bot_ua")) {
         console.log(`✅ PASS: Correctly identified as BOT (Score: ${win.botguard_score})`);
     } else {
@@ -91,11 +87,11 @@ runTest("Bot - User Agent", (ctx) => {
     }
 });
 
-runTest("Bot - Low Hardware Spec", (ctx) => {
-    ctx.navigator.hardwareConcurrency = 1;
-    ctx.navigator.deviceMemory = 0.5;
+runTest("Bot - Low Hardware Spec", (nav) => {
+    nav.hardwareConcurrency = 1;
+    nav.deviceMemory = 0.5;
 }, (win) => {
-    // 10 + 10 = 20. Should not be bot.
+    // 10 + 10 = 20.
     if (win.is_bot === false && win.botguard_score === 20) {
         console.log(`✅ PASS: Correctly identified as HUMAN (Low Spec) (Score: ${win.botguard_score})`);
     } else {

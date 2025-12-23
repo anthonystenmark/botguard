@@ -1,3 +1,5 @@
+import botSignatures from './signatures.js';
+
 const BotGuard = {
     threshold: 50,
     score: 0,
@@ -13,7 +15,15 @@ const BotGuard = {
         lowMemory: 10
     },
 
+    reset: function () {
+        this.score = 0;
+        this.reasons = [];
+    },
+
     detectStatic: function () {
+        // Guard against non-browser environments for safe import
+        if (typeof navigator === 'undefined') return;
+
         const nav = navigator;
         const ua = nav.userAgent;
 
@@ -24,7 +34,7 @@ const BotGuard = {
         }
 
         // 2. User Agent Check
-        const knownBots = /googlebot|bingbot|applebot|gptbot|oai-searchbot|chatgpt-user|anthropic-ai|claudebot|claude-web|perplexitybot|perplexity-user|amazonbot|facebookbot|meta-externalagent|meta-webindexer|linkedinbot|bytespider|duckassistbot|cohere-ai|ai2bot|ccbot|diffbot|omgili|timpibot|youbot|mistralai-user|grokbot|xai-grok/i;
+        const knownBots = new RegExp(botSignatures.join('|'), 'i');
         if (knownBots.test(ua)) {
             this.score += this.weights.userAgent;
             this.reasons.push("known_bot_ua");
@@ -44,13 +54,13 @@ const BotGuard = {
         }
 
         // 5. Headless Chrome
-        if (window.chrome === undefined && /Chrome/.test(ua)) {
+        if (typeof window !== 'undefined' && window.chrome === undefined && /Chrome/.test(ua)) {
             this.score += this.weights.headlessChrome;
             this.reasons.push("headless_chrome");
         }
 
         // 6. Viewport
-        if (window.innerWidth <= 800 && window.innerHeight <= 600) {
+        if (typeof window !== 'undefined' && window.innerWidth <= 800 && window.innerHeight <= 600) {
             this.score += this.weights.smallViewport;
             this.reasons.push("small_viewport");
         }
@@ -71,11 +81,13 @@ const BotGuard = {
     run: function () {
         this.detectStatic();
 
-        // Expose results immediately
-        window.botguard_score = this.score;
-        window.is_bot = this.score >= this.threshold;
-        window.botguard_reasons = this.reasons;
+        // Expose results immediately if window exists
+        if (typeof window !== 'undefined') {
+            window.botguard_score = this.score;
+            window.is_bot = this.score >= this.threshold;
+            window.botguard_reasons = this.reasons;
+        }
     }
 };
 
-BotGuard.run();
+export default BotGuard;
