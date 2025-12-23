@@ -49,9 +49,12 @@ The script exposes the following global variables immediately:
 You can use these variables to set up Custom JavaScript targeting conditions or attributes.
 
 ```javascript
-// Ensure BotGuard has run
+// Make sure the minified script is above, in the Project Javascript.
+window.optimizely = window.optimizely || []; 
 if (window.is_bot) {
-    // Logic to exclude from experiment or tag user
+    window.optimizely.push({ "type": "disable" });
+    console.log("Bot score: " + window.botguard_score);
+    console.log("Bot reasons: " + window.botguard_reasons);
 }
 ```
 
