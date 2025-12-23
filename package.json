@@ -1,0 +1,25 @@
+{
+  "name": "botguard",
+  "version": "1.0.0",
+  "description": "Client side bot detection",
+  "main": "test.js",
+  "scripts": {
+    "test": "node src/test_botguard.js",
+    "build": "terser src/botguard.js -o dist/botguard.min.js -c -m"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anthonystenmark/botguard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/anthonystenmark/botguard/issues"
+  },
+  "homepage": "https://github.com/anthonystenmark/botguard#readme",
+  "devDependencies": {
+    "terser": "^5.44.1"
+  }
+}
