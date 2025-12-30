@@ -4,7 +4,7 @@ const BotGuard = {
     threshold: config.threshold,
     score: 0,
     reasons: [],
-    weights: config.weights,
+    weights: config.signalWeights,
 
     reset: function () {
         this.score = 0;
@@ -25,7 +25,7 @@ const BotGuard = {
         }
 
         // 2. User Agent Check
-        const knownBots = new RegExp(config.signatures.join('|'), 'i');
+        const knownBots = new RegExp(config.uaStrings.join('|'), 'i');
         if (knownBots.test(ua)) {
             this.score += this.weights.userAgent;
             this.reasons.push("known_bot_ua");

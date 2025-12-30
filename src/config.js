@@ -1,6 +1,6 @@
 export const config = {
     threshold: 50,
-    weights: {
+    signalWeights: {
         webdriver: 50,
         userAgent: 90,
         noPlugins: 15,
@@ -10,7 +10,7 @@ export const config = {
         lowConcurrency: 10,
         lowMemory: 10
     },
-    signatures: [
+    uaStrings: [
         'googlebot', 'bingbot', 'applebot',
         'gptbot', 'oai-searchbot', 'chatgpt-user',
         'anthropic-ai', 'claudebot', 'claude-web',
