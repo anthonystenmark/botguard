@@ -72,7 +72,7 @@ npm test
 ```
 
 **Build:**
-Minifies the `src/botguard.js` file to `botguard.min.js`.
+Minifies the source to `./dist/botguard.min.js`.
 ```bash
 npm run build
 ```
