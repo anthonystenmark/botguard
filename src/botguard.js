@@ -1,19 +1,10 @@
-import botSignatures from './signatures.js';
+import { config } from './config.js';
 
 const BotGuard = {
-    threshold: 50,
+    threshold: config.threshold,
     score: 0,
     reasons: [],
-    weights: {
-        webdriver: 50,
-        userAgent: 90,
-        noPlugins: 15,
-        noLanguages: 15,
-        headlessChrome: 20,
-        smallViewport: 10,
-        lowConcurrency: 10,
-        lowMemory: 10
-    },
+    weights: config.weights,
 
     reset: function () {
         this.score = 0;
@@ -34,7 +25,7 @@ const BotGuard = {
         }
 
         // 2. User Agent Check
-        const knownBots = new RegExp(botSignatures.join('|'), 'i');
+        const knownBots = new RegExp(config.signatures.join('|'), 'i');
         if (knownBots.test(ua)) {
             this.score += this.weights.userAgent;
             this.reasons.push("known_bot_ua");
