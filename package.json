@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "node src/test_botguard.js",
-    "build": "esbuild src/index.js --bundle --minify --outfile=dist/botguard.min.js"
+    "build": "esbuild src/index.js --bundle --target=es2020 --minify | terser --compress --mangle --module -o dist/botguard.min.js"
   },
   "repository": {
     "type": "git",
